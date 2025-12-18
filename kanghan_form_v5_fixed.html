@@ -11,9 +11,16 @@
         
         .header { background: linear-gradient(135deg, #2d3436, #636e72); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; }
         .header-logo { font-size: 36px; margin-bottom: 5px; }
-        .header h1 { font-size: 20px; font-weight: 600; margin-bottom: 5px; }
+        .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
         .header p { font-size: 12px; opacity: 0.8; }
         .header .badge { display: inline-block; background: #f39c12; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 8px; }
+        
+        .welcome-text { font-size: 14px; color: #ffeaa7; margin-bottom: 12px; font-weight: 500; }
+        .shop-info { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 16px; margin: 12px auto; max-width: 400px; text-align: left; }
+        .info-row { font-size: 12px; padding: 4px 0; display: flex; align-items: center; gap: 8px; opacity: 0.95; }
+        .info-row span { font-size: 14px; width: 20px; text-align: center; }
+        .cta-text { font-size: 14px; color: #74b9ff; margin-top: 12px; font-weight: 500; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         
         .container { max-width: 600px; margin: 0 auto; padding: 16px; }
         
@@ -207,8 +214,17 @@
     <div class="header">
         <div class="header-logo">🧺</div>
         <h1>ร้านกังหันดีวอช</h1>
-        <p>988/11 สิริ อเวนิว ม.1 ต.บางบ่อ อ.บางบ่อ จ.สมุทรปราการ</p>
+        <div class="welcome-text">สวัสดีค่ะคุณลูกค้า 😊 ยินดีต้อนรับสู่ร้านกังหันดีวอชนะคะ</div>
+        <div class="shop-info">
+            <div class="info-row"><span>📘</span> Facebook: กังหันดีวอช สาขา สิริอเวนิว บางบ่อ</div>
+            <div class="info-row"><span>💬</span> Line ID: @kanhan2024</div>
+            <div class="info-row"><span>📞</span> โทร 094-325-9578</div>
+            <div class="info-row"><span>📍</span> 988/11 สิริ อเวนิว ม.1 ต.บางบ่อ อ.บางบ่อ จ.สมุทรปราการ</div>
+            <div class="info-row"><span>⏰</span> เปิด 24 ชม. ไม่มีวันหยุด</div>
+            <div class="info-row"><span>👩</span> แม่บ้าน: จ-ศ 13:00-17:00 | ส-อา 08:00-17:00</div>
+        </div>
         <span class="badge">🟠 บัตรคิวสีส้ม - ฝากซัก-อบ-พับ</span>
+        <div class="cta-text">👇 กรุณาเลือกบริการที่ต้องการด้านล่างนะคะ 👇</div>
     </div>
 
     <div class="container">
@@ -370,8 +386,8 @@
                 }
             },
             dry: {
-                '16kg': { price: 50 },
-                '25kg': { price: 70 }
+                '16kg': { price: 50, baseTime: 30, extraTimePerUnit: 6 },
+                '25kg': { price: 70, baseTime: 35, extraTimePerUnit: 5 }
             }
         };
 
@@ -385,9 +401,21 @@
             return PRICING.wash[detergent][size][temp];
         }
 
+        function getDryTime(size, extraTime) {
+            const dryInfo = PRICING.dry[size];
+            const extraUnits = extraTime / 10;
+            return dryInfo.baseTime + (extraUnits * dryInfo.extraTimePerUnit);
+        }
+
+        function getDryTempLabel(temp) {
+            if (temp === 'high') return 'สูง';
+            if (temp === 'medium') return 'กลาง';
+            return 'ต่ำ';
+        }
+
         let state = {
             step: 1, basketChoice: null, serviceType: null, basketCount: 2, baskets: [],
-            drySize: '25kg', dryTemp: 'medium', extraTime: 0, paymentMethod: 'qr'
+            drySize: '25kg', dryTemp: 'high', extraTime: 0, paymentMethod: 'qr'
         };
 
         function selectBasketChoice(choice) {
@@ -440,7 +468,7 @@
             state.serviceType = type;
             document.querySelectorAll('#step2Single .service-option').forEach(btn => btn.classList.remove('active'));
             event.currentTarget.classList.add('active');
-            state.baskets = [{ queueNumber: '', detergent: 'shop', waterTemp: 'cold', washSize: '10kg', drySize: '16kg', dryTemp: 'medium', extraTime: 0, photo: null }];
+            state.baskets = [{ queueNumber: '', detergent: 'shop', waterTemp: 'cold', washSize: '10kg', drySize: '16kg', dryTemp: 'high', extraTime: 0, photo: null }];
             setTimeout(() => {
                 renderSingleBasketForm();
                 document.getElementById('singleBasketForm').classList.remove('hidden');
@@ -464,8 +492,8 @@
                 html += '<div><label class="form-label">📷 ถ่ายรูปตะกร้า + บัตรคิว</label><div class="photo-upload ' + (b.photo ? 'has-photo' : '') + '" onclick="uploadSinglePhoto()"><div class="icon">' + (b.photo ? '✅' : '📷') + '</div><p>' + (b.photo ? 'อัปโหลดแล้ว' : 'แตะเพื่อถ่ายรูป') + '</p></div></div></div>';
                 
                 html += '<div class="form-group"><label class="form-label">🧴 น้ำยาซักผ้า</label><div class="detergent-group">';
-                html += '<button class="detergent-btn ' + (b.detergent === 'own' ? 'active' : '') + '" onclick="updateSingleDetergent(\'own\')"><span class="check">✓</span><div class="icon">🧴❌</div><div class="title">มีน้ำยาซักน้ำยาปรับมาเอง</div></button>';
-                html += '<button class="detergent-btn ' + (b.detergent === 'shop' ? 'active' : '') + '" onclick="updateSingleDetergent(\'shop\')"><span class="check">✓</span><div class="icon">🧴✓</div><div class="title">ใช้น้ำยาซักน้ำยาปรับของร้าน</div><div class="desc">+10฿</div></button>';
+                html += '<button class="detergent-btn ' + (b.detergent === 'own' ? 'active' : '') + '" onclick="updateSingleDetergent(\'own\')"><span class="check">✓</span><div class="icon">🧴</div><div class="title">มีน้ำยาซักน้ำยาปรับมาเอง</div></button>';
+                html += '<button class="detergent-btn ' + (b.detergent === 'shop' ? 'active' : '') + '" onclick="updateSingleDetergent(\'shop\')"><span class="check">✓</span><div class="icon">🫧</div><div class="title">ใช้น้ำยาซักน้ำยาปรับของร้าน</div><div class="desc">+10฿</div></button>';
                 html += '</div></div>';
                 
                 html += '<div class="form-group"><label class="form-label">🌡️ อุณหภูมิน้ำ</label><div class="water-temp-group">';
@@ -503,7 +531,9 @@
                 
                 html += '<div class="extra-time-section"><div class="extra-time-header"><span class="extra-time-label">⏱️ ต่อเวลาอบ</span><span class="extra-time-value" id="singleExtraTimeValue">' + b.extraTime + '฿</span></div>';
                 html += '<div class="extra-time-controls"><button class="extra-time-btn" onclick="changeSingleExtraTime(-10)">−</button><div class="extra-time-display" id="singleExtraTimeDisplay">' + b.extraTime + ' ฿</div><button class="extra-time-btn plus" onclick="changeSingleExtraTime(10)">+</button></div>';
-                html += '<div class="extra-time-hint">กดเพิ่ม/ลด ครั้งละ 10฿ (สูงสุด 50฿)</div></div></div>';
+                const singleDryInfo = PRICING.dry[b.drySize];
+                const singleTotalTime = getDryTime(b.drySize, b.extraTime);
+                html += '<div class="extra-time-hint">+10฿ = +' + singleDryInfo.extraTimePerUnit + ' นาที | เวลารวม: <strong>' + singleTotalTime + ' นาที</strong></div></div></div>';
             }
 
             document.getElementById('singleBasketForm').innerHTML = html;
@@ -543,8 +573,7 @@
         function changeSingleExtraTime(delta) {
             const b = state.baskets[0];
             b.extraTime = Math.max(0, Math.min(50, b.extraTime + delta));
-            document.getElementById('singleExtraTimeDisplay').textContent = b.extraTime + ' ฿';
-            document.getElementById('singleExtraTimeValue').textContent = b.extraTime + '฿';
+            renderSingleBasketForm();
             updateSinglePrices();
             calculateTotal();
         }
@@ -582,9 +611,9 @@
         function initMultiBaskets() {
             state.baskets = [];
             for (let i = 0; i < state.basketCount; i++) {
-                state.baskets.push({ queueNumber: '', detergent: 'shop', waterTemp: 'cold', washSize: '10kg', drySize: '16kg', dryTemp: 'medium', extraTime: 0, photo: null });
+                state.baskets.push({ queueNumber: '', detergent: 'shop', waterTemp: 'cold', washSize: '10kg', drySize: '16kg', dryTemp: 'high', extraTime: 0, photo: null });
             }
-            state.drySize = '25kg'; state.dryTemp = 'medium'; state.extraTime = 0;
+            state.drySize = '25kg'; state.dryTemp = 'high'; state.extraTime = 0;
         }
 
         function renderMultiBasketForm() {
@@ -612,8 +641,8 @@
                     html += '<div><label class="form-label">📷 ถ่ายรูป</label><div class="photo-upload ' + (b.photo ? 'has-photo' : '') + '" onclick="uploadMultiPhoto(' + idx + ')"><div class="icon">' + (b.photo ? '✅' : '📷') + '</div><p>' + (b.photo ? 'อัปโหลดแล้ว' : 'ถ่ายรูป') + '</p></div></div></div>';
                     
                     html += '<div class="form-group"><label class="form-label">🧴 น้ำยาซักผ้า</label><div class="detergent-group">';
-                    html += '<button class="detergent-btn ' + (b.detergent === 'own' ? 'active' : '') + '" onclick="updateMultiDetergent(' + idx + ', \'own\')"><span class="check">✓</span><div class="icon">🧴❌</div><div class="title">มีน้ำยาซักน้ำยาปรับมาเอง</div></button>';
-                    html += '<button class="detergent-btn ' + (b.detergent === 'shop' ? 'active' : '') + '" onclick="updateMultiDetergent(' + idx + ', \'shop\')"><span class="check">✓</span><div class="icon">🧴✓</div><div class="title">ใช้น้ำยาซักน้ำยาปรับของร้าน</div><div class="desc">+10฿</div></button></div></div>';
+                    html += '<button class="detergent-btn ' + (b.detergent === 'own' ? 'active' : '') + '" onclick="updateMultiDetergent(' + idx + ', \'own\')"><span class="check">✓</span><div class="icon">🧴</div><div class="title">มีน้ำยาซักน้ำยาปรับมาเอง</div></button>';
+                    html += '<button class="detergent-btn ' + (b.detergent === 'shop' ? 'active' : '') + '" onclick="updateMultiDetergent(' + idx + ', \'shop\')"><span class="check">✓</span><div class="icon">🫧</div><div class="title">ใช้น้ำยาซักน้ำยาปรับของร้าน</div><div class="desc">+10฿</div></button></div></div>';
                     
                     html += '<div class="form-group"><label class="form-label">🌡️ อุณหภูมิน้ำ</label><div class="water-temp-group">';
                     html += '<button class="water-temp-btn cold ' + (b.waterTemp === 'cold' ? 'active' : '') + '" onclick="updateMultiWaterTemp(' + idx + ', \'cold\')"><span class="check">✓</span><div class="icon">❄️</div><div class="title">น้ำเย็น</div><div class="extra">ราคาเริ่มต้น</div></button>';
@@ -647,7 +676,9 @@
                     html += '</select></div></div>';
                     html += '<div class="extra-time-section"><div class="extra-time-header"><span class="extra-time-label">⏱️ ต่อเวลาอบ</span><span class="extra-time-value" id="multiExtraTimeValue">' + state.extraTime + '฿</span></div>';
                     html += '<div class="extra-time-controls"><button class="extra-time-btn" onclick="changeMultiExtraTime(-10)">−</button><div class="extra-time-display" id="multiExtraTimeDisplay">' + state.extraTime + ' ฿</div><button class="extra-time-btn plus" onclick="changeMultiExtraTime(10)">+</button></div>';
-                    html += '<div class="extra-time-hint">กดเพิ่ม/ลด ครั้งละ 10฿ (สูงสุด 50฿)</div></div></div>';
+                    const multiDryInfo = PRICING.dry[state.drySize];
+                    const multiTotalTime = getDryTime(state.drySize, state.extraTime);
+                    html += '<div class="extra-time-hint">+10฿ = +' + multiDryInfo.extraTimePerUnit + ' นาที | เวลารวม: <strong>' + multiTotalTime + ' นาที</strong></div></div></div>';
                     html += '<div class="subtotal-row dry"><span class="label">🌀 รวมค่าอบ (1 เครื่อง)</span><span class="value" id="multiDrySubtotal">' + dt + ' ฿</span></div>';
                 } else {
                     html += '<div class="section-header dry" style="margin-top:20px"><span class="icon">🌀</span><span class="text">ข้อมูลการอบ (' + state.basketCount + ' ตะกร้า)</span></div>';
@@ -668,7 +699,9 @@
                         html += '</select></div></div>';
                         html += '<div class="extra-time-section"><div class="extra-time-header"><span class="extra-time-label">⏱️ ต่อเวลาอบ</span><span class="extra-time-value" id="multiExtraTimeValue-' + num + '">' + b.extraTime + '฿</span></div>';
                         html += '<div class="extra-time-controls"><button class="extra-time-btn" onclick="changeMultiBasketExtraTime(' + idx + ', -10)">−</button><div class="extra-time-display" id="multiExtraTimeDisplay-' + num + '">' + b.extraTime + ' ฿</div><button class="extra-time-btn plus" onclick="changeMultiBasketExtraTime(' + idx + ', 10)">+</button></div>';
-                        html += '<div class="extra-time-hint">กดเพิ่ม/ลด ครั้งละ 10฿ (สูงสุด 50฿)</div></div></div>';
+                        const bDryInfo = PRICING.dry[b.drySize];
+                        const bTotalTime = getDryTime(b.drySize, b.extraTime);
+                        html += '<div class="extra-time-hint">+10฿ = +' + bDryInfo.extraTimePerUnit + ' นาที | เวลารวม: <strong>' + bTotalTime + ' นาที</strong></div></div></div>';
                     });
                     html += '<div class="subtotal-row dry"><span class="label">🌀 รวมค่าอบ (' + state.basketCount + ' เครื่อง)</span><span class="value" id="multiDrySubtotal">' + drySub + ' ฿</span></div>';
                 }
@@ -699,21 +732,14 @@
 
         function changeMultiExtraTime(delta) {
             state.extraTime = Math.max(0, Math.min(50, state.extraTime + delta));
-            document.getElementById('multiExtraTimeDisplay').textContent = state.extraTime + ' ฿';
-            document.getElementById('multiExtraTimeValue').textContent = state.extraTime + '฿';
-            const dt = PRICING.dry[state.drySize].price + state.extraTime;
-            document.getElementById('multiDryTotalPrice').textContent = dt + ' ฿';
-            document.getElementById('multiDrySubtotal').textContent = dt + ' ฿';
+            renderMultiBasketForm();
             calculateTotal();
         }
 
         function changeMultiBasketExtraTime(idx, delta) {
             const b = state.baskets[idx];
             b.extraTime = Math.max(0, Math.min(50, b.extraTime + delta));
-            const num = idx + 1;
-            document.getElementById('multiExtraTimeDisplay-' + num).textContent = b.extraTime + ' ฿';
-            document.getElementById('multiExtraTimeValue-' + num).textContent = b.extraTime + '฿';
-            document.getElementById('multiDryPrice-' + num).textContent = (PRICING.dry[b.drySize].price + b.extraTime) + ' ฿';
+            renderMultiBasketForm();
             calculateTotal();
         }
 
@@ -759,22 +785,26 @@
                     const price = getWashPrice(b.detergent, b.washSize, b.waterTemp);
                     const tempL = b.waterTemp === 'cold' ? 'เย็น' : b.waterTemp === 'warm' ? 'อุ่น' : 'ร้อน';
                     const detL = b.detergent === 'own' ? 'มีน้ำยาเอง' : 'น้ำยาร้าน';
-                    html += '<div class="summary-item"><span class="label">#' + (b.queueNumber || '?') + ' ' + b.washSize + ' ' + tempL + ' (' + detL + ')</span><span class="value">' + price + ' ฿</span></div>';
+                    html += '<div class="summary-item"><span class="label">คิวที่ ' + (b.queueNumber || '?') + ' | ' + b.washSize + ' | ' + tempL + ' | ' + detL + '</span><span class="value">' + price + ' ฿</span></div>';
                 });
                 html += '</div></div>';
             }
 
             if (showDry) {
                 if (isDryTogether) {
+                    const dryTime = getDryTime(state.drySize, state.extraTime);
+                    const dryTempL = getDryTempLabel(state.dryTemp);
                     html += '<div class="summary-section"><div class="summary-section-title">🌀 ค่าอบรวม (1 เครื่อง)</div><div class="summary-items">';
-                    html += '<div class="summary-item"><span class="label">เครื่องอบ ' + state.drySize + '</span><span class="value">' + PRICING.dry[state.drySize].price + ' ฿</span></div>';
-                    if (state.extraTime > 0) html += '<div class="summary-item"><span class="label">ต่อเวลาอบ</span><span class="value">+' + state.extraTime + ' ฿</span></div>';
+                    html += '<div class="summary-item"><span class="label">เครื่องอบ ' + state.drySize + ' | ' + dryTempL + ' | ' + dryTime + ' นาที</span><span class="value">' + PRICING.dry[state.drySize].price + ' ฿</span></div>';
+                    if (state.extraTime > 0) html += '<div class="summary-item"><span class="label">ต่อเวลาอบ (+' + (state.extraTime / 10 * PRICING.dry[state.drySize].extraTimePerUnit) + ' นาที)</span><span class="value">+' + state.extraTime + ' ฿</span></div>';
                     html += '</div></div>';
                 } else {
                     html += '<div class="summary-section"><div class="summary-section-title">🌀 ค่าอบ (' + state.basketCount + ' เครื่อง)</div><div class="summary-items">';
                     state.baskets.forEach((b, idx) => {
                         const dp = PRICING.dry[b.drySize].price + b.extraTime;
-                        html += '<div class="summary-item"><span class="label">เครื่องที่ ' + (idx + 1) + ' (' + b.drySize + (b.extraTime > 0 ? ' +เวลา' : '') + ')</span><span class="value">' + dp + ' ฿</span></div>';
+                        const bDryTime = getDryTime(b.drySize, b.extraTime);
+                        const bDryTempL = getDryTempLabel(b.dryTemp);
+                        html += '<div class="summary-item"><span class="label">เครื่องที่ ' + (idx + 1) + ' (' + b.drySize + ' | ' + bDryTempL + ' | ' + bDryTime + ' นาที)</span><span class="value">' + dp + ' ฿</span></div>';
                     });
                     html += '</div></div>';
                 }
