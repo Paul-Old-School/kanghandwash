@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TFEX Gold Online — TP/SL Calculator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #111827; color: #e5e7eb; min-height: 100vh; }
+  
+  .header { background: linear-gradient(to right, #d97706, #eab308); padding: 16px 24px; }
+  .header h1 { font-size: 20px; font-weight: bold; color: #fff; }
+  .header p { font-size: 11px; color: #fef3c7; margin-top: 4px; }
+  
+  .tabs { display: flex; background: #1f2937; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
+  .tab { padding: 10px 20px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; color: #9ca3af; background: none; border-top: none; border-left: none; border-right: none; }
+  .tab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+  .tab:hover { color: #d1d5db; }
+  
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .grid { display: grid; gap: 16px; }
+  .grid-3 { grid-template-columns: 1fr 2fr; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3col { grid-template-columns: 1fr 1fr 1fr; }
+  
+  .panel { background: #1f2937; border-radius: 12px; padding: 16px; border: 1px solid #374151; }
+  .panel-title { font-size: 13px; font-weight: bold; color: #f59e0b; margin-bottom: 12px; }
+  
+  .input-group { margin-bottom: 10px; }
+  .input-group.highlight { background: #fffbeb22; border: 1px solid #f59e0b44; border-radius: 8px; padding: 8px; }
+  .input-group label { display: block; font-size: 11px; font-weight: 600; color: #9ca3af; margin-bottom: 4px; }
+  .input-row { display: flex; align-items: center; gap: 8px; }
+  .input-group input { width: 100%; padding: 8px 12px; background: #111827; border: 1px solid #4b5563; border-radius: 8px; color: #e5e7eb; font-size: 13px; font-family: 'Consolas', monospace; }
+  .input-group input:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 2px #f59e0b33; }
+  .input-unit { font-size: 11px; color: #6b7280; white-space: nowrap; }
+  .input-hint { font-size: 10px; color: #6b7280; margin-top: 2px; }
+  
+  .dir-buttons { display: flex; gap: 8px; margin-bottom: 12px; }
+  .dir-btn { flex: 1; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; border: 2px solid transparent; }
+  .dir-btn.long { background: #374151; color: #6b7280; border-color: #4b5563; }
+  .dir-btn.long.active { background: #065f46; color: #34d399; border-color: #34d399; }
+  .dir-btn.short { background: #374151; color: #6b7280; border-color: #4b5563; }
+  .dir-btn.short.active { background: #7f1d1d; color: #f87171; border-color: #f87171; }
+  
+  .result-card { background: #fff; border-radius: 8px; padding: 12px; border-left: 4px solid #9ca3af; }
+  .result-card.ok { border-left-color: #22c55e; }
+  .result-card.warn { border-left-color: #eab308; }
+  .result-card.danger { border-left-color: #ef4444; }
+  .result-card.info { border-left-color: #3b82f6; }
+  .result-title { font-size: 11px; color: #6b7280; }
+  .result-value { font-size: 18px; font-weight: bold; color: #111827; font-family: 'Consolas', monospace; }
+  .result-sub { font-size: 10px; color: #9ca3af; }
+  
+  .validation { padding: 6px 12px; border-radius: 6px; font-size: 11px; margin-bottom: 4px; }
+  .validation.ok { background: #065f4622; color: #34d399; }
+  .validation.warn { background: #78350f22; color: #fbbf24; }
+  .validation.danger { background: #7f1d1d22; color: #f87171; }
+  
+  .gauge-bar { position: relative; height: 32px; background: #374151; border-radius: 16px; overflow: hidden; margin-bottom: 8px; }
+  .gauge-section { position: absolute; top: 0; height: 100%; }
+  .gauge-red { left: 0; width: 25%; background: #ef444466; }
+  .gauge-green { left: 25%; width: 15%; background: #22c55e66; }
+  .gauge-yellow { left: 40%; width: 60%; background: #eab30844; }
+  .gauge-marker { position: absolute; top: 0; height: 100%; width: 3px; background: #fff; box-shadow: 0 0 6px #fff; transition: left 0.3s; }
+  .gauge-labels { display: flex; justify-content: space-between; font-size: 10px; color: #6b7280; }
+  
+  .margin-box { text-align: center; padding: 10px; border-radius: 8px; }
+  .margin-box.im { background: #1e3a5f33; }
+  .margin-box.mm { background: #78350f33; }
+  .margin-box.fm { background: #7f1d1d33; }
+  .margin-label { font-size: 11px; font-weight: 600; }
+  .margin-value { font-size: 18px; font-weight: bold; }
+  .margin-sub { font-size: 10px; color: #6b7280; }
+  
+  /* Trailing Table */
+  .trail-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .trail-table th { background: #37415188; color: #d1d5db; padding: 8px 10px; text-align: right; font-weight: 600; position: sticky; top: 40px; }
+  .trail-table th:first-child, .trail-table th:last-child { text-align: left; }
+  .trail-table td { padding: 6px 10px; text-align: right; border-top: 1px solid #37415155; font-family: 'Consolas', monospace; }
+  .trail-table td:first-child, .trail-table td:last-child { text-align: left; font-family: 'Segoe UI', sans-serif; }
+  .trail-table tr:hover { background: #37415133; }
+  .trail-table tr.row-entry { background: #1e3a5f22; }
+  .trail-table tr.row-tp1 { background: #065f4622; }
+  .trail-table tr.row-tp2 { background: #78350f22; }
+  .text-green { color: #34d399; }
+  .text-red { color: #f87171; }
+  .text-amber { color: #f59e0b; }
+  .text-blue { color: #60a5fa; }
+  .text-gray { color: #6b7280; }
+  .font-bold { font-weight: bold; }
+  
+  .rules-section { background: #37415133; padding: 16px; border-radius: 8px; margin-bottom: 12px; }
+  .rules-title { font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+  .rules-section p { font-size: 12px; color: #d1d5db; margin-bottom: 6px; line-height: 1.5; }
+  
+  .footer { background: #78350f22; border: 1px solid #92400e; border-radius: 8px; padding: 12px; font-size: 11px; color: #fbbf24; margin-top: 16px; }
+  
+  .hidden { display: none; }
+  
+  @media (max-width: 768px) {
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-3col { grid-template-columns: 1fr; }
+    .trail-table { font-size: 10px; }
+    .trail-table th, .trail-table td { padding: 4px 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏆 TFEX Gold Online — TP/SL Calculator</h1>
+  <p>GOH26 | Multiplier: 300 THB/จุด | IM: 126,105 THB | Commission: 178.1 THB/side | อ้างอิง: หลักประกันใหม่ 10 ก.พ. 2569</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('main')">📊 คำนวณหลัก</button>
+  <button class="tab" onclick="switchTab('trail')">📈 ตาราง Trailing SL</button>
+  <button class="tab" onclick="switchTab('rules')">📋 กฎทั้งหมด</button>
+</div>
+
+<div class="container">
+  <!-- ==================== MAIN TAB ==================== -->
+  <div id="tab-main" class="grid grid-3">
+    <!-- Input Panel -->
+    <div class="panel">
+      <div class="panel-title">⚙️ ตั้งค่า</div>
+      
+      <label style="font-size:11px;color:#9ca3af;margin-bottom:4px;display:block;">ทิศทาง</label>
+      <div class="dir-buttons">
+        <button class="dir-btn long active" id="btn-long" onclick="setDirection('long')">📈 Long</button>
+        <button class="dir-btn short" id="btn-short" onclick="setDirection('short')">📉 Short</button>
+      </div>
+      
+      <div class="input-group">
+        <label>💰 เงินทุน (บาท)</label>
+        <div class="input-row"><input type="number" id="capital" value="200000" step="10000" oninput="debouncedCalc()"><span class="input-unit">THB</span></div>
+      </div>
+      <div class="input-group">
+        <label>📝 จำนวนสัญญา</label>
+        <div class="input-row"><input type="number" id="contracts" value="1" min="1" max="10" oninput="debouncedCalc()"><span class="input-unit">สัญญา</span></div>
+        <div class="input-hint" id="max-contracts-hint"></div>
+      </div>
+      <div class="input-group highlight">
+        <label>🎯 Entry Price</label>
+        <div class="input-row"><input type="number" id="entry" value="5025" step="0.1" oninput="debouncedCalc()"><span class="input-unit">USD</span></div>
+      </div>
+      <div class="input-group highlight">
+        <label>🔴 Stop Loss</label>
+        <div class="input-row"><input type="number" id="sl" value="4960" step="0.1" oninput="debouncedCalc()"><span class="input-unit">USD</span></div>
+      </div>
+      <div class="input-group">
+        <label>🟢 Take Profit 1</label>
+        <div class="input-row"><input type="number" id="tp1" value="5100" step="0.1" oninput="debouncedCalc()"><span class="input-unit">USD</span></div>
+      </div>
+      <div class="input-group">
+        <label>🟢 Take Profit 2</label>
+        <div class="input-row"><input type="number" id="tp2" value="5150" step="0.1" oninput="debouncedCalc()"><span class="input-unit">USD</span></div>
+      </div>
+      <div class="input-group">
+        <label>📊 ATR (14)</label>
+        <div class="input-row"><input type="number" id="atr" value="192" step="1" oninput="debouncedCalc()"><span class="input-unit">จุด/วัน</span></div>
+        <div class="input-hint">จาก TradingView Data Window</div>
+      </div>
+      
+      <div style="background:#374151;border-radius:8px;padding:12px;margin-top:12px;">
+        <div style="font-size:11px;font-weight:bold;color:#f59e0b;margin-bottom:8px;">⚙️ Trailing Stop ตั้งค่า</div>
+        <div class="input-group">
+          <label>ขยับ SL ทุกๆ</label>
+          <div class="input-row"><input type="number" id="trailStep" value="20" step="5" oninput="debouncedCalc()"><span class="input-unit">จุด</span></div>
+        </div>
+        <div class="input-group">
+          <label>% ล็อคเริ่มต้น (หลัง TP1)</label>
+          <div class="input-row"><input type="number" id="lockStart" value="37" step="1" oninput="debouncedCalc()"><span class="input-unit">%</span></div>
+        </div>
+        <div class="input-group">
+          <label>% ล็อคเพิ่มขึ้นทีละ</label>
+          <div class="input-row"><input type="number" id="lockIncr" value="5" step="1" oninput="debouncedCalc()"><span class="input-unit">%</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Results Panel -->
+    <div>
+      <!-- Validations -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">✅ ตรวจสอบเงื่อนไข</div>
+        <div id="validations"></div>
+      </div>
+      
+      <!-- Metrics Grid -->
+      <div class="grid grid-3col" style="margin-bottom:16px;" id="metrics"></div>
+      
+      <!-- ATR Gauge -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">📊 ATR Distance Gauge</div>
+        <div class="gauge-bar">
+          <div class="gauge-section gauge-red"></div>
+          <div class="gauge-section gauge-green"></div>
+          <div class="gauge-section gauge-yellow"></div>
+          <div class="gauge-marker" id="gauge-marker"></div>
+        </div>
+        <div class="gauge-labels">
+          <span>0%</span>
+          <span style="color:#f87171">25% ← ขั้นต่ำ</span>
+          <span style="color:#34d399">40% Sweet Spot</span>
+          <span style="color:#eab308">50% →</span>
+          <span>100%</span>
+        </div>
+        <div style="text-align:center;margin-top:8px;font-size:13px;" id="atr-summary"></div>
+      </div>
+      
+      <!-- Margin Details -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">🏦 Margin Details (GO — มีผลบังคับใช้ 10 ก.พ. 2569)</div>
+        <div class="grid grid-3col" id="margin-boxes"></div>
+        <div style="margin-top:8px;font-size:10px;color:#6b7280;" id="comm-note"></div>
+      </div>
+      
+      <!-- 2% Rule -->
+      <div class="panel" id="rule-2pct"></div>
+    </div>
+  </div>
+  
+  <!-- ==================== TRAIL TAB ==================== -->
+  <div id="tab-trail" class="hidden">
+    <div class="panel" style="overflow-x:auto;">
+      <div class="panel-title">📈 ตาราง Trailing Stop Loss</div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:12px;" id="trail-header"></div>
+      <table class="trail-table" id="trail-table"></table>
+      <div style="margin-top:12px;font-size:10px;color:#6b7280;" id="trail-notes"></div>
+    </div>
+  </div>
+  
+  <!-- ==================== RULES TAB ==================== -->
+  <div id="tab-rules" class="hidden">
+    <div class="panel">
+      <div class="panel-title" style="font-size:16px;">📋 กฎการตั้ง TP / SL ทั้งหมด</div>
+      
+      <div class="rules-section">
+        <div class="rules-title text-green">🟢 กฎ TP (Take Profit)</div>
+        <p><strong>กฎที่ 1:</strong> TP ต้องอยู่ที่แนวต้านจริงบนกราฟ (Round Number + Fibonacci + Swing High/Low + Volume Profile)</p>
+        <p><strong>กฎที่ 2:</strong> TP1 ต้องให้ R:R ≥ 1:1 → TP1 ≥ Entry + (Entry - SL)</p>
+        <p><strong>กฎที่ 3:</strong> TP2 ต้องให้ R:R รวม ≥ 1:1.5</p>
+        <p><strong>กฎที่ 4:</strong> TP ไม่ได้คำนวณจากจำนวนจุดเท่าๆ กัน แต่ดูจากแนวต้านจริง</p>
+      </div>
+      
+      <div class="rules-section">
+        <div class="rules-title text-red">🔴 กฎ SL (Stop Loss)</div>
+        <p><strong>กฎ ATR Floor:</strong> SL ห่างจากราคา ≥ 25% ของ ATR (ป้องกันโดน noise)</p>
+        <p><strong>กฎ ATR Sweet Spot:</strong> SL ห่าง 25-40% ATR เหมาะสมที่สุด</p>
+        <p><strong>กฎ Risk:</strong> Risk ไม่เกิน 2% ของทุน (กฎทอง)</p>
+        <p><strong>กฎแนวรับ:</strong> SL ต้องอยู่ต่ำกว่าแนวรับทางเทคนิค (ไม่ลอยกลางอากาศ)</p>
+        <p><strong>กฎเหล็ก:</strong> SL เลื่อนได้แค่ "ขึ้น" เท่านั้น ห้ามเลื่อน "ลง"</p>
+      </div>
+      
+      <div class="rules-section">
+        <div class="rules-title text-blue">📈 กฎ Trailing Stop</div>
+        <p><strong>ขั้น 1:</strong> เมื่อถึง TP1 → ขยับ SL ขึ้นมา Breakeven (Entry + ค่าคอม)</p>
+        <p><strong>ขั้น 2:</strong> หลัง TP1 ทุกๆ N จุด → ล็อคกำไรเริ่มที่ X% เพิ่มทีละ Y%</p>
+        <p><strong>ขั้น 3:</strong> ใกล้ TP2 (&lt;15 จุด) → ล็อคอย่างน้อย 55-60%</p>
+        <p><strong>ขั้น 4:</strong> ถึง TP2 → ปิดทำกำไร (แนะนำ) หรือล็อค 60%+ ถ้าปล่อย run</p>
+        <p><strong>เช็คทุกครั้ง:</strong> SL ใหม่ต้องห่างจากราคาปัจจุบัน ≥ 25% ATR</p>
+      </div>
+      
+      <div class="rules-section">
+        <div class="rules-title" style="color:#a78bfa;">⚠️ กฎบริหารความเสี่ยง</div>
+        <p>❌ ห้ามเทรดโดยไม่มี SL</p>
+        <p>❌ ห้าม Averaging Down (เพิ่ม position ตอนขาดทุน)</p>
+        <p>❌ ห้ามเลื่อน SL ลง</p>
+        <p>❌ ขาดทุนสะสม 5% ในวัน → หยุดเทรด</p>
+        <p>❌ ห้ามเทรด 30 นาที ก่อน/หลัง ข่าว High Impact</p>
+        <p>❌ ห้าม Short จนกว่า MACD Weekly จะ flip Bearish</p>
+      </div>
+      
+      <div class="rules-section">
+        <div class="rules-title text-amber">📐 สูตรคำนวณ</div>
+        <p style="font-family:Consolas,monospace;">กำไร/ขาดทุน (บาท) = จำนวนจุด × 300 × จำนวนสัญญา</p>
+        <p style="font-family:Consolas,monospace;">Breakeven = Entry + (ค่าคอม ÷ Multiplier ÷ สัญญา)</p>
+        <p style="font-family:Consolas,monospace;">SL ใหม่ = Entry + (กำไรปัจจุบัน × %ล็อค)</p>
+        <p style="font-family:Consolas,monospace;">R:R = (TP - Entry - ค่าคอมต่อจุด) ÷ (Entry - SL + ค่าคอมต่อจุด)</p>
+        <p style="font-family:Consolas,monospace;">ATR% = (ราคาปัจจุบัน - SL) ÷ ATR × 100</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">⚠️ การวิเคราะห์และเครื่องมือทั้งหมดนี้เป็นความเห็น ไม่ใช่คำแนะนำทางการเงิน ผู้เทรดต้องตัดสินใจและรับผิดชอบเอง ข้อมูลหลักประกันและค่าคอมอ้างอิงจาก Hua Seng Heng Gold Futures ณ 10 ก.พ. 2569</div>
+</div>
+
+<script>
+// ============================================================
+// Constants from verified project data
+// ============================================================
+const MULTIPLIER = 300;        // GO: 300 THB per point
+const TICK_SIZE = 0.1;
+const COMM_PER_SIDE = 178.1;   // 162 + 16.1
+const COMM_RT = 356.2;
+const IM_PER_CONTRACT = 126105;
+const MM_PCT = 0.70;
+const FM_PCT = 0.30;
+
+let direction = 'long';
+let debounceTimer = null;
+function debouncedCalc() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(calculate, 400);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  if (tab === 'trail') buildTrailTable();
+}
+
+function setDirection(dir) {
+  direction = dir;
+  document.getElementById('btn-long').classList.toggle('active', dir === 'long');
+  document.getElementById('btn-short').classList.toggle('active', dir === 'short');
+  calculate();
+}
+
+function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function fmt(n) { return n.toLocaleString('th-TH'); }
+function roundTick(v) { return Math.round(v * 10) / 10; }
+
+function calculate() {
+  const capital = getVal('capital');
+  const contracts = getVal('contracts');
+  const entry = getVal('entry');
+  const sl = getVal('sl');
+  const tp1 = getVal('tp1');
+  const tp2 = getVal('tp2');
+  const atr = getVal('atr');
+  const isLong = direction === 'long';
+  
+  const im = IM_PER_CONTRACT * contracts;
+  const mm = im * MM_PCT;
+  const fm = im * FM_PCT;
+  const ee = capital - im;
+  const maxContracts = Math.floor(capital / IM_PER_CONTRACT);
+  
+  document.getElementById('max-contracts-hint').textContent = `สูงสุด ${maxContracts} สัญญา (IM ${fmt(IM_PER_CONTRACT)}/สัญญา)`;
+  
+  // SL
+  const slDist = isLong ? entry - sl : sl - entry;
+  const slRisk = slDist * MULTIPLIER * contracts;
+  const slRiskComm = slRisk + (COMM_RT * contracts);
+  const slRiskPct = (slRiskComm / capital) * 100;
+  
+  // TP
+  const tp1Dist = isLong ? tp1 - entry : entry - tp1;
+  const tp1Reward = tp1Dist * MULTIPLIER * contracts;
+  const tp1Net = tp1Reward - (COMM_RT * contracts);
+  
+  const tp2Dist = isLong ? tp2 - entry : entry - tp2;
+  const tp2Reward = tp2Dist * MULTIPLIER * contracts;
+  const tp2Net = tp2Reward - (COMM_RT * contracts);
+  
+  // R:R
+  const rr1 = slRiskComm > 0 ? tp1Net / slRiskComm : 0;
+  const rr2 = slRiskComm > 0 ? tp2Net / slRiskComm : 0;
+  
+  // ATR
+  const atrPct = atr > 0 ? (slDist / atr) * 100 : 0;
+  let atrStatus = 'ok', atrLabel = 'เหมาะสม ✅';
+  if (slDist < atr * 0.25) { atrStatus = 'danger'; atrLabel = 'แคบเกินไป ❌'; }
+  else if (slDist > atr * 0.50) { atrStatus = 'warn'; atrLabel = 'กว้าง ⚠️'; }
+  
+  // Breakeven
+  const commPts = COMM_RT * contracts / (MULTIPLIER * contracts);
+  const be = isLong ? roundTick(entry + commPts) : roundTick(entry - commPts);
+  
+  // 2% rule
+  const risk2 = capital * 0.02;
+  const idealSL = risk2 / (MULTIPLIER * contracts);
+  
+  // ==================== Validations ====================
+  let vhtml = '';
+  function addV(type, msg) { vhtml += `<div class="validation ${type}">${msg}</div>`; }
+  
+  if (isLong && sl >= entry) addV('danger', '❌ SL ต้องต่ำกว่า Entry สำหรับ Long');
+  if (!isLong && sl <= entry) addV('danger', '❌ SL ต้องสูงกว่า Entry สำหรับ Short');
+  if (isLong && tp1 <= entry) addV('danger', '❌ TP1 ต้องสูงกว่า Entry สำหรับ Long');
+  if (tp2 <= tp1 && isLong) addV('danger', '❌ TP2 ต้องสูงกว่า TP1');
+  
+  if (slRiskPct > 10) addV('danger', `⚠️ Risk ${slRiskPct.toFixed(1)}% ของทุน — สูงมาก!`);
+  else if (slRiskPct > 2) addV('warn', `⚠️ Risk ${slRiskPct.toFixed(1)}% ของทุน — เกิน 2% rule`);
+  else addV('ok', `✅ Risk ${slRiskPct.toFixed(1)}% ของทุน — ผ่านกฎ 2%`);
+  
+  if (rr1 < 1) addV('danger', `❌ R:R TP1 = 1:${rr1.toFixed(2)} — ต่ำกว่า 1:1`);
+  else addV('ok', `✅ R:R TP1 = 1:${rr1.toFixed(2)} — ผ่าน`);
+  
+  if (rr2 < 1.5) addV('warn', `⚠️ R:R TP2 = 1:${rr2.toFixed(2)} — ควรได้ 1:1.5+`);
+  else addV('ok', `✅ R:R TP2 = 1:${rr2.toFixed(2)} — ดี`);
+  
+  if (atrStatus === 'danger') addV('danger', `❌ SL ห่าง ${slDist} จุด = ${atrPct.toFixed(0)}% ATR — แคบเกินไป`);
+  else if (atrStatus === 'warn') addV('warn', `⚠️ SL ห่าง ${slDist} จุด = ${atrPct.toFixed(0)}% ATR — กว้าง`);
+  else addV('ok', `✅ SL ห่าง ${slDist} จุด = ${atrPct.toFixed(0)}% ATR — เหมาะสม`);
+  
+  if (ee < 0) addV('danger', '❌ ทุนไม่พอวาง Margin!');
+  if (contracts > maxContracts) addV('danger', `❌ เปิดได้สูงสุด ${maxContracts} สัญญา`);
+  
+  document.getElementById('validations').innerHTML = vhtml;
+  
+  // ==================== Metrics ====================
+  function card(icon, title, value, sub, status) {
+    return `<div class="result-card ${status}"><div class="result-title">${icon} ${title}</div><div class="result-value">${value}</div><div class="result-sub">${sub}</div></div>`;
+  }
+  
+  document.getElementById('metrics').innerHTML =
+    card('💸', 'Risk (SL hit)', `฿${fmt(Math.round(slRiskComm))}`, `${slRiskPct.toFixed(1)}% ของทุน | ${slDist} จุด`, slRiskPct > 5 ? 'danger' : slRiskPct > 2 ? 'warn' : 'ok') +
+    card('🟢', 'Reward TP1 (สุทธิ)', `฿${fmt(Math.round(tp1Net))}`, `${tp1Dist} จุด | R:R 1:${rr1.toFixed(2)}`, rr1 >= 1 ? 'ok' : 'danger') +
+    card('🟢', 'Reward TP2 (สุทธิ)', `฿${fmt(Math.round(tp2Net))}`, `${tp2Dist} จุด | R:R 1:${rr2.toFixed(2)}`, rr2 >= 1.5 ? 'ok' : 'warn') +
+    card('⚖️', 'Breakeven', be.toFixed(1), `Entry + ค่าคอม ${commPts.toFixed(1)} จุด`, 'info') +
+    card('📊', 'ATR Check', `${atrPct.toFixed(0)}% ATR`, `SL ห่าง ${slDist} จุด | ATR ${atr}`, atrStatus === 'danger' ? 'danger' : atrStatus === 'warn' ? 'warn' : 'ok') +
+    card('🏦', 'Excess Equity', `฿${fmt(ee)}`, `IM: ฿${fmt(im)} | ทุน: ฿${fmt(capital)}`, ee < 0 ? 'danger' : ee < 50000 ? 'warn' : 'ok');
+  
+  // ==================== Gauge ====================
+  const markerPos = Math.min(Math.max(atrPct, 0), 100);
+  document.getElementById('gauge-marker').style.left = markerPos + '%';
+  document.getElementById('atr-summary').innerHTML = `SL อยู่ที่ <span class="text-amber font-bold">${atrPct.toFixed(1)}%</span> ของ ATR (${slDist} จุด จาก ${atr} จุด) ${atrStatus === 'ok' ? '✅' : atrStatus === 'warn' ? '⚠️' : '❌'}`;
+  
+  // ==================== Margin ====================
+  document.getElementById('margin-boxes').innerHTML =
+    `<div class="margin-box im"><div class="margin-label text-blue">Initial Margin (IM)</div><div class="margin-value">฿${fmt(im)}</div><div class="margin-sub">100% | ${contracts} สัญญา</div></div>` +
+    `<div class="margin-box mm"><div class="margin-label text-amber">Maintenance (MM)</div><div class="margin-value">฿${fmt(Math.round(mm))}</div><div class="margin-sub">70% ของ IM</div></div>` +
+    `<div class="margin-box fm"><div class="margin-label text-red">Force Close (FM)</div><div class="margin-value">฿${fmt(Math.round(fm))}</div><div class="margin-sub">30% ของ IM</div></div>`;
+  document.getElementById('comm-note').textContent = `📌 ค่าคอม: นายหน้า 162 + ธรรมเนียม 14 + ข้อมูล 2 = 178.1 บาท/สัญญา/ฝั่ง (Internet) | Round trip: ${COMM_RT} บาท`;
+  
+  // ==================== 2% Rule ====================
+  const idealSLPrice = isLong ? roundTick(entry - idealSL) : roundTick(entry + idealSL);
+  document.getElementById('rule-2pct').innerHTML = `
+    <div class="panel-title">📐 กฎ 2% — SL ที่แนะนำ</div>
+    <p style="font-size:12px;color:#d1d5db;">ถ้า risk ไม่เกิน 2% ของทุน (${fmt(capital)} × 2% = <span class="text-amber font-bold">฿${fmt(risk2)}</span>):</p>
+    <p style="font-size:12px;color:#d1d5db;margin-top:4px;">SL ควรห่างไม่เกิน <span class="text-amber font-bold">${idealSL.toFixed(1)} จุด</span> → SL ที่แนะนำ: <span class="text-amber font-bold">${idealSLPrice.toFixed(1)}</span></p>
+    <p style="font-size:10px;color:#6b7280;margin-top:8px;">⚠️ ด้วยทุน ${fmt(capital)} + GO multiplier 300 → SL ที่แนะนำอาจแคบกว่า ATR ขั้นต่ำ (${(atr * 0.25).toFixed(0)} จุด) นี่คือข้อจำกัดของทุนน้อย</p>`;
+  
+  buildTrailTable();
+}
+
+// ==================== TRAILING STOP TABLE ====================
+function buildTrailTable() {
+  const entry = getVal('entry');
+  const sl = getVal('sl');
+  const tp1 = getVal('tp1');
+  const tp2 = getVal('tp2');
+  const atr = getVal('atr');
+  const contracts = getVal('contracts');
+  const trailStep = getVal('trailStep');
+  const lockStart = getVal('lockStart');
+  const lockIncr = getVal('lockIncr');
+  const isLong = direction === 'long';
+  const commPts = COMM_RT * contracts / (MULTIPLIER * contracts);
+  
+  document.getElementById('trail-header').textContent = `Entry: ${entry} | SL เริ่มต้น: ${sl} | TP1: ${tp1} | TP2: ${tp2} | ATR: ${atr} | ขยับทุก ${trailStep} จุด`;
+  
+  let rows = [];
+  
+  // Row 0: Entry
+  const slDist0 = isLong ? entry - sl : sl - entry;
+  rows.push({ price: entry, profit: 0, lockPct: '-', slNew: sl, lockedPts: isLong ? sl - entry : entry - sl, lockedBaht: ((isLong ? sl - entry : entry - sl) * MULTIPLIER * contracts) - COMM_RT * contracts, rule: 'Entry — SL เริ่มต้น', atrDist: slDist0, atrPct: atr > 0 ? slDist0 / atr * 100 : 0, cls: 'row-entry' });
+  
+  // Row 1: TP1 → Breakeven
+  const tp1Profit = isLong ? tp1 - entry : entry - tp1;
+  const beSL = isLong ? roundTick(entry + commPts) : roundTick(entry - commPts);
+  const beDist = isLong ? tp1 - beSL : beSL - tp1;
+  rows.push({ price: tp1, profit: tp1Profit, lockPct: 'BE', slNew: beSL, lockedPts: roundTick(commPts), lockedBaht: 0, rule: 'TP1 → Breakeven (เท่าทุน)', atrDist: beDist, atrPct: atr > 0 ? beDist / atr * 100 : 0, cls: 'row-tp1' });
+  
+  // Trailing rows
+  let curLock = lockStart;
+  let price = isLong ? tp1 + trailStep : tp1 - trailStep;
+  let count = 0;
+  let prevSL = beSL; // Track previous SL for monotonic enforcement
+  const atrMin = atr * 0.25;
+  
+  while (count < 25) {
+    count++;
+    
+    // Insert TP2 row if this step would skip over it
+    const prevPrice = isLong ? price - trailStep : price + trailStep;
+    if (price !== tp2 && ((isLong && prevPrice < tp2 && price > tp2) || (!isLong && prevPrice > tp2 && price < tp2))) {
+      const tp2profit = isLong ? tp2 - entry : entry - tp2;
+      let tp2Lock = Math.max(curLock, 60);
+      const tp2lockPts = tp2profit * (tp2Lock / 100);
+      let tp2slNew = isLong ? roundTick(entry + tp2lockPts) : roundTick(entry - tp2lockPts);
+      let tp2dist = isLong ? tp2 - tp2slNew : tp2slNew - tp2;
+      let tp2adj = false;
+      if (tp2dist < atrMin) { tp2slNew = isLong ? roundTick(tp2 - atrMin) : roundTick(tp2 + atrMin); tp2dist = atrMin; tp2adj = true; }
+      if ((isLong && tp2slNew < prevSL) || (!isLong && tp2slNew > prevSL)) { tp2slNew = prevSL; tp2dist = isLong ? tp2 - tp2slNew : tp2slNew - tp2; }
+      const tp2lk = isLong ? tp2slNew - entry : entry - tp2slNew;
+      const tp2b = (tp2lk * MULTIPLIER * contracts) - COMM_RT * contracts;
+      let tp2rule = 'TP2 → แนะนำปิดทำกำไร';
+      if (tp2adj) tp2rule += ' ⚠️ATR';
+      rows.push({ price: tp2, profit: tp2profit, lockPct: tp2Lock + '%', slNew: tp2slNew, lockedPts: roundTick(tp2lk), lockedBaht: Math.round(tp2b), rule: tp2rule, atrDist: tp2dist, atrPct: atr > 0 ? tp2dist / atr * 100 : 0, cls: 'row-tp2' });
+      prevSL = tp2slNew;
+    }
+    
+    const profit = isLong ? price - entry : entry - price;
+    const distToTP2 = isLong ? tp2 - price : price - tp2;
+    
+    let effectiveLock = curLock;
+    if (distToTP2 <= 15 && distToTP2 > 0) effectiveLock = Math.max(curLock, 55);
+    if (distToTP2 <= 0) effectiveLock = Math.max(curLock, 60);
+    
+    const lockPts = profit * (effectiveLock / 100);
+    let slNew = isLong ? roundTick(entry + lockPts) : roundTick(entry - lockPts);
+    
+    // ATR check
+    let dist = isLong ? price - slNew : slNew - price;
+    let adjusted = false;
+    if (dist < atrMin) {
+      slNew = isLong ? roundTick(price - atrMin) : roundTick(price + atrMin);
+      dist = atrMin;
+      adjusted = true;
+    }
+    
+    // Monotonic: SL must never decrease
+    if ((isLong && slNew < prevSL) || (!isLong && slNew > prevSL)) {
+      slNew = prevSL;
+      dist = isLong ? price - slNew : slNew - price;
+    }
+    
+    const lockedPts = isLong ? slNew - entry : entry - slNew;
+    const lockedBaht = (lockedPts * MULTIPLIER * contracts) - COMM_RT * contracts;
+    
+    let rule = `+${trailStep} จุด → ล็อค ${effectiveLock}%`;
+    let cls = '';
+    if (price === tp2) { rule = 'TP2 → แนะนำปิดทำกำไร'; cls = 'row-tp2'; }
+    else if (distToTP2 <= 15 && distToTP2 > 0) rule += ' (ใกล้ TP2)';
+    else if (distToTP2 < 0) rule = `ผ่าน TP2 → ล็อค ${effectiveLock}%`;
+    if (adjusted) rule += ' ⚠️ATR';
+    
+    rows.push({ price, profit, lockPct: effectiveLock + '%', slNew, lockedPts: roundTick(lockedPts), lockedBaht: Math.round(lockedBaht), rule, atrDist: dist, atrPct: atr > 0 ? dist / atr * 100 : 0, cls });
+    
+    prevSL = slNew;
+    curLock = Math.min(curLock + lockIncr, 85);
+    price = isLong ? price + trailStep : price - trailStep;
+    
+    if (isLong && price > tp2 + trailStep * 4) break;
+    if (!isLong && price < tp2 - trailStep * 4) break;
+  }
+  
+  // Build HTML
+  let html = '<thead><tr><th>#</th><th>ราคาถึง</th><th>กำไร (จุด)</th><th>% ล็อค</th><th style="color:#f59e0b;">SL ใหม่</th><th>ล็อค (จุด)</th><th>ล็อค (฿)</th><th>SL ห่าง</th><th>% ATR</th><th>หลักการ</th></tr></thead><tbody>';
+  
+  rows.forEach((r, i) => {
+    const isTP1 = r.price === tp1;
+    const isTP2 = r.price === tp2;
+    const pLabel = isTP1 ? '<span class="text-green">TP1 </span>' : isTP2 ? '<span class="text-amber">TP2 </span>' : '';
+    const bahtCls = r.lockedBaht >= 0 ? 'text-green' : 'text-red';
+    const atrCls = r.atrPct >= 25 ? 'text-green' : r.atrPct >= 20 ? 'text-amber' : 'text-red';
+    
+    html += `<tr class="${r.cls}">
+      <td class="text-gray">${i}</td>
+      <td class="font-bold">${pLabel}${r.price.toFixed(1)}</td>
+      <td class="text-green">${r.profit > 0 ? '+' + r.profit : r.profit}</td>
+      <td>${r.lockPct === 'BE' ? '<span class="text-blue">BE</span>' : r.lockPct}</td>
+      <td class="text-amber font-bold">${r.slNew.toFixed(1)}</td>
+      <td>${r.lockedPts}</td>
+      <td class="${bahtCls}">${r.lockedBaht >= 0 ? '+' : ''}${fmt(r.lockedBaht)}</td>
+      <td>${r.atrDist.toFixed(1)}</td>
+      <td class="${atrCls}">${r.atrPct.toFixed(0)}%</td>
+      <td class="text-gray">${r.rule}</td>
+    </tr>`;
+  });
+  
+  html += '</tbody>';
+  document.getElementById('trail-table').innerHTML = html;
+  
+  document.getElementById('trail-notes').innerHTML = `
+    📌 <strong>กำไรที่ล็อค (฿)</strong> = (SL ใหม่ - Entry) × ${MULTIPLIER} × ${contracts} สัญญา - ค่าคอม ${COMM_RT} บาท<br>
+    📌 <strong>% ATR</strong> = ระยะห่าง SL จากราคาปัจจุบัน ÷ ATR(${atr}) — ควร 25-50%<br>
+    📌 ปรับ SL ได้ ±5 จุดตามแนวรับ/แนวต้านจริงบนกราฟ<br>
+    ⚠️ การวิเคราะห์ทั้งหมดเป็นความเห็น ไม่ใช่คำแนะนำทางการเงิน`;
+}
+
+// Initialize
+calculate();
+</script>
+</body>
+</html>
